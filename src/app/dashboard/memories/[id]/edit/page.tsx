@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { MemoryForm } from "@/components/memories/memory-form";
 import { createClient } from "@/lib/supabase/server";
+import { attachAuthors } from "@/lib/authors";
 import type { Memory } from "@/lib/memories";
 
 export const dynamic = "force-dynamic";
@@ -17,10 +18,12 @@ export default async function EditMemoryPage({ params }: { params: Promise<{ id:
 
   const selected = new Set((links ?? []).map((row) => row.collection_id));
   const memory = data as Memory;
+  const showAuthor = selected.size > 0;
+  if (showAuthor) await attachAuthors(supabase, [memory]);
   await Promise.all(memory.memory_media.map(async (media) => {
     const { data: signed } = await supabase.storage.from("memories").createSignedUrl(media.storage_path, 3600);
     media.signed_url = signed?.signedUrl ?? null;
   }));
 
-  return <main className="mx-auto w-full max-w-4xl p-5 md:p-8"><p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--fern-dark)]">Return to the page</p><h1 className="serif mt-2 mb-7 text-5xl">Edit memory</h1><MemoryForm collections={(collections ?? []).map((item) => ({ ...item, selected: selected.has(item.id) }))} memory={memory} /></main>;
+  return <main className="mx-auto w-full max-w-4xl p-5 md:p-8"><p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--fern-dark)]">Return to the page</p><h1 className="serif mt-2 mb-7 text-5xl">Edit memory</h1><MemoryForm collections={(collections ?? []).map((item) => ({ ...item, selected: selected.has(item.id) }))} memory={memory} showAuthor={showAuthor} /></main>;
 }

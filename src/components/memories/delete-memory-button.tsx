@@ -13,13 +13,15 @@ export function DeleteMemoryButton({ id, paths }: { id: string; paths: string[] 
   async function remove() {
     if (!window.confirm("Delete this memory? This cannot be undone.")) return;
     setBusy(true);
-    if (paths.length) await supabase.storage.from("memories").remove(paths);
+    // Delete the row (cascades to memory_media) before the storage files: if this fails,
+    // the files are untouched and nothing is left pointing at a deleted object.
     const { error } = await supabase.from("memories").delete().eq("id", id);
     if (error) {
       window.alert(error.message);
       setBusy(false);
       return;
     }
+    if (paths.length) await supabase.storage.from("memories").remove(paths);
     router.refresh();
   }
 

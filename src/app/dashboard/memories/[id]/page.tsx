@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Bell, Heart, Pencil } from "lucide-react";
+import { AuthorTag } from "@/components/memories/author-tag";
 import { DeleteMemoryButton } from "@/components/memories/delete-memory-button";
 import { createClient } from "@/lib/supabase/server";
+import { attachAuthors } from "@/lib/authors";
 import { formatMemoryDate, type Memory } from "@/lib/memories";
 
 export const dynamic = "force-dynamic";
@@ -10,10 +12,15 @@ export const dynamic = "force-dynamic";
 export default async function MemoryDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data } = await supabase.from("memories").select("*, memory_media(*)").eq("id", id).single();
+  const [{ data }, { count: collectionCount }] = await Promise.all([
+    supabase.from("memories").select("*, memory_media(*)").eq("id", id).single(),
+    supabase.from("collection_memories").select("collection_id", { count: "exact", head: true }).eq("memory_id", id)
+  ]);
   if (!data) notFound();
 
   const memory = data as Memory;
+  const showAuthor = (collectionCount ?? 0) > 0;
+  if (showAuthor) await attachAuthors(supabase, [memory]);
   await Promise.all(memory.memory_media.map(async (media) => {
     const { data: signed } = await supabase.storage.from("memories").createSignedUrl(media.storage_path, 3600);
     media.signed_url = signed?.signedUrl ?? null;
@@ -54,6 +61,7 @@ export default async function MemoryDetailsPage({ params }: { params: Promise<{ 
             <p className="handwritten text-xl text-[var(--fern-dark)]">{formatMemoryDate(memory.occurred_at)}</p>
             <div className="mt-3 flex items-start justify-between gap-4"><h1 className="serif text-4xl md:text-5xl">{memory.title}</h1>{memory.is_favorite && <Heart className="shrink-0 text-[var(--peony)]" fill="currentColor" size={25} />}</div>
             <p className="mt-3 text-xs font-bold uppercase tracking-[.2em] text-[var(--muted)]">{memory.memory_type} · {memory.memory_media.length} attachment{memory.memory_media.length === 1 ? "" : "s"}</p>
+            {showAuthor && memory.author && <AuthorTag author={memory.author} />}
             {memory.memory_type === "letter" && memory.letter_recipient && <p className="serif mt-7 text-xl italic">Dear {memory.letter_recipient},</p>}
             {memory.body && <p className="mt-6 whitespace-pre-wrap text-lg leading-8 text-[var(--ink)]">{memory.body}</p>}
             {memory.memory_type === "letter" && memory.letter_signoff && <p className="serif mt-7 text-right text-xl italic">{memory.letter_signoff}</p>}

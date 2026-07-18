@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Bell, Heart, Pencil } from "lucide-react";
+import { AuthorTag } from "@/components/memories/author-tag";
 import { DeleteMemoryButton } from "@/components/memories/delete-memory-button";
 import { formatMemoryDate, type Memory } from "@/lib/memories";
 
-export function MemoryCard({ memory, index }: { memory: Memory; index: number }) {
+export function MemoryCard({ memory, index, showAuthor = false }: { memory: Memory; index: number; showAuthor?: boolean }) {
   const media = memory.memory_media?.[0];
   const rotation = ["-rotate-1", "rotate-1", "rotate-0"][index % 3];
   const tapeClass = ["washi-pink", "washi-green", "washi-blue"][index % 3];
@@ -32,6 +33,7 @@ export function MemoryCard({ memory, index }: { memory: Memory; index: number })
                 {memory.memory_type} · {formatMemoryDate(memory.occurred_at)}
               </p>
               <h2 className="serif mt-2 text-3xl">{memory.title}</h2>
+              {showAuthor && memory.author && <AuthorTag author={memory.author} />}
             </div>
             {memory.is_favorite && <Heart className="shrink-0 text-[var(--peony)]" fill="currentColor" size={20} />}
           </div>

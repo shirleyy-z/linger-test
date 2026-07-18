@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Heart, ImagePlus, LoaderCircle, PenLine, Save, Trash2 } from "lucide-react";
+import { AuthorTag } from "@/components/memories/author-tag";
 import { createClient } from "@/lib/supabase/client";
 import { MEMORY_TYPES, type Memory, type MemoryMedia, type MemoryType } from "@/lib/memories";
 import { VoiceRecorder } from "@/components/memories/voice-recorder";
@@ -13,7 +14,7 @@ const ACCEPTED_TYPES = ["image/", "audio/", "video/"];
 
 type CollectionOption = { id: string; name: string; cover_emoji: string; selected?: boolean };
 
-export function MemoryForm({ memory, collections = [], initialCollectionId }: { memory?: Memory; collections?: CollectionOption[]; initialCollectionId?: string }) {
+export function MemoryForm({ memory, collections = [], initialCollectionId, showAuthor = false }: { memory?: Memory; collections?: CollectionOption[]; initialCollectionId?: string; showAuthor?: boolean }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [busy, setBusy] = useState(false);
@@ -34,18 +35,19 @@ export function MemoryForm({ memory, collections = [], initialCollectionId }: { 
     setDeletingId(media.id);
     setError("");
 
-    const { error: storageError } = await supabase.storage.from("memories").remove([media.storage_path]);
-    if (storageError) {
-      setError(storageError.message);
-      setDeletingId(null);
-      return;
-    }
-
+    // Delete the row before the storage object: if the row delete fails, the file is still
+    // there and nothing points to a dead path. The reverse order can leave a memory_media
+    // row referencing a file that no longer exists, which renders as a broken image.
     const { error: rowError } = await supabase.from("memory_media").delete().eq("id", media.id);
     if (rowError) {
       setError(rowError.message);
       setDeletingId(null);
       return;
+    }
+
+    const { error: storageError } = await supabase.storage.from("memories").remove([media.storage_path]);
+    if (storageError) {
+      setError(`The attachment was removed, but its file could not be deleted from storage: ${storageError.message}`);
     }
 
     setExistingMedia((items) => items.filter((item) => item.id !== media.id));
@@ -181,7 +183,9 @@ export function MemoryForm({ memory, collections = [], initialCollectionId }: { 
       <span className="washi-strip washi-green" aria-hidden="true" />
       <span className="corner-sticker" aria-hidden="true">✿</span>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      {showAuthor && memory?.author && <AuthorTag author={memory.author} />}
+
+      <div className="mt-2 grid gap-6 md:grid-cols-2">
         <label><span className="label">Title</span><input className="input" defaultValue={memory?.title} maxLength={120} name="title" placeholder="A day worth keeping" required /></label>
         <label><span className="label">Kind of memory</span><select className="input" value={memoryType} name="memory_type" onChange={(event) => setMemoryType(event.target.value as MemoryType)}>{MEMORY_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></label>
       </div>

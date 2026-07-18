@@ -305,6 +305,42 @@ select {
   letter-spacing: .01em;
 }
 
+/* Increment 7 — who-added-this credit tag */
+.author-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  border-radius: 999px;
+  border: 1px dashed var(--fern);
+  background: rgba(255, 250, 240, 0.75);
+  padding: 3px 12px 3px 3px;
+  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  font-size: 0.8rem;
+  color: var(--fern-dark);
+  transform: rotate(-1.5deg);
+}
+
+.author-tag-avatar {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--fennel);
+  font-family: system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.author-tag-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .month-spread { position: relative; }
 .month-ribbon {
   display: flex;

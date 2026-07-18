@@ -18,8 +18,14 @@ export type MemoryMedia = {
   signed_url?: string | null;
 };
 
+export type MemoryAuthor = {
+  display_name: string;
+  avatar_url: string | null;
+};
+
 export type Memory = {
   id: string;
+  owner_id: string;
   title: string;
   body: string;
   memory_type: MemoryType;
@@ -39,7 +45,12 @@ export type Memory = {
   paper_style?: string | null;
   sticker?: string | null;
   memory_media: MemoryMedia[];
+  author?: MemoryAuthor | null;
 };
+
+export function initials(name: string) {
+  return name.trim().split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase()).join("") || "?";
+}
 
 export function formatMemoryDate(value: string) {
   return new Intl.DateTimeFormat("en-CA", {
