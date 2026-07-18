@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Copy, Plus, Sparkles, Users } from "lucide-react";
 import { GenerateEventsButton } from "@/components/collections/collection-actions";
+import { CollectionDangerZone } from "@/components/collections/collection-danger-zone";
 import { MemoryCard } from "@/components/memories/memory-card";
 import { createClient } from "@/lib/supabase/server";
 import { formatMemoryDate, type Memory } from "@/lib/memories";
@@ -12,19 +13,22 @@ export const dynamic = "force-dynamic";
 export default async function CollectionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const [{ data: collection }, { data: links }, { data: events }, { count: memberCount }] = await Promise.all([
+  const { data: { user } } = await supabase.auth.getUser();
+  const [{ data: collection }, { data: links }, { data: events }, { count: memberCount }, { data: membership }] = await Promise.all([
     supabase.from("collections").select("*").eq("id", id).single(),
     supabase.from("collection_memories").select("added_at, memories(*, memory_media(*))").eq("collection_id", id).order("added_at", { ascending: false }),
     supabase.from("collection_events").select("*, event_memories(memory_id)").eq("collection_id", id).order("start_date", { ascending: false }),
-    supabase.from("collection_members").select("user_id", { count: "exact", head: true }).eq("collection_id", id)
+    supabase.from("collection_members").select("user_id", { count: "exact", head: true }).eq("collection_id", id),
+    supabase.from("collection_members").select("role").eq("collection_id", id).eq("user_id", user?.id ?? "").maybeSingle()
   ]);
   if (!collection) notFound();
+  const isOwner = membership?.role === "owner";
   const memories = (links ?? []).map((row) => row.memories).filter(Boolean) as unknown as Memory[];
   await Promise.all(memories.flatMap((memory) => memory.memory_media.map(async (media) => { const { data } = await supabase.storage.from("memories").createSignedUrl(media.storage_path, 3600); media.signed_url = data?.signedUrl ?? null; })));
   const memoryMap = new Map(memories.map((memory) => [memory.id, memory]));
 
   return <main className="mx-auto w-full max-w-[1320px] p-5 md:p-8">
-    <section className="collection-hero paper relative overflow-hidden rounded-[34px] p-7 md:p-10"><span className="absolute right-8 top-5 text-7xl opacity-80">{collection.cover_emoji}</span><p className="text-sm font-bold uppercase tracking-[.2em] text-[var(--fern-dark)]">Collaborative collection</p><h1 className="serif mt-3 max-w-3xl text-5xl md:text-6xl">{collection.name}</h1><p className="mt-4 max-w-2xl leading-7 text-[var(--muted)]">{collection.description || "A shared scrapbook for moments worth keeping together."}</p><div className="mt-6 flex flex-wrap items-center gap-3"><span className="sticker-badge"><Users size={16}/>{memberCount ?? 0} members</span><span className="invite-code"><Copy size={15}/> Invite code: <strong>{collection.invite_code}</strong></span></div></section>
+    <section className="collection-hero paper relative overflow-hidden rounded-[34px] p-7 md:p-10"><span className="absolute right-8 top-5 text-7xl opacity-80">{collection.cover_emoji}</span><p className="text-sm font-bold uppercase tracking-[.2em] text-[var(--fern-dark)]">Collaborative collection</p><h1 className="serif mt-3 max-w-3xl text-5xl md:text-6xl">{collection.name}</h1><p className="mt-4 max-w-2xl leading-7 text-[var(--muted)]">{collection.description || "A shared scrapbook for moments worth keeping together."}</p><div className="mt-6 flex flex-wrap items-center gap-3"><span className="sticker-badge"><Users size={16}/>{memberCount ?? 0} members</span><span className="invite-code"><Copy size={15}/> Invite code: <strong>{collection.invite_code}</strong></span></div>{user && <div className="mt-6"><CollectionDangerZone collectionId={id} collectionName={collection.name} isOwner={isOwner} memberCount={memberCount ?? 1} userId={user.id}/></div>}</section>
 
     <section className="mt-7 flex flex-col gap-4 md:flex-row md:items-center md:justify-between"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-[var(--fern-dark)]">Scrapbook timeline</p><h2 className="serif mt-1 text-3xl">Our memories</h2></div><div className="flex flex-wrap gap-3"><GenerateEventsButton collectionId={id}/><Link className="primary-button" href={`/dashboard/memories/new?collection=${id}`}><Plus size={18}/> Add memory here</Link></div></section>
 
