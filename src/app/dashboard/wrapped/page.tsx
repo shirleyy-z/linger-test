@@ -7,7 +7,10 @@ export const dynamic = "force-dynamic";
 
 export default async function WrappedPage({ searchParams }: { searchParams: Promise<{ year?: string }> }) {
   const { year: requested } = await searchParams;
-  const year = Number(requested) || new Date().getFullYear();
+  const currentYear = new Date().getFullYear(); // server time — never trust the client's clock
+  const lastCompletedYear = currentYear - 1;
+  const requestedYear = Number(requested);
+  const year = requestedYear && requestedYear <= lastCompletedYear ? requestedYear : lastCompletedYear;
   const supabase = await createClient();
   const [{ data }, { count: collectionCount }] = await Promise.all([
     supabase.from("memories").select("*, memory_media(*)").gte("occurred_at", `${year}-01-01`).lte("occurred_at", `${year}-12-31`).order("occurred_at"),
@@ -22,7 +25,7 @@ export default async function WrappedPage({ searchParams }: { searchParams: Prom
   const topType = Object.entries(typeCounts).sort((a,b)=>b[1]-a[1])[0];
   const first = memories[0];
   const last = memories[memories.length-1];
-  const years = [year-1, year, year+1].filter((value)=>value<=new Date().getFullYear());
+  const years = [year-1, year, year+1].filter((value)=>value<=lastCompletedYear);
 
   return <main className="mx-auto w-full max-w-6xl p-5 md:p-8">
     <section className="wrapped-hero overflow-hidden rounded-[36px] p-8 md:p-12"><p className="text-sm font-bold uppercase tracking-[.25em]">Linger Wrapped</p><div className="mt-4 flex flex-col gap-6 md:flex-row md:items-end md:justify-between"><div><h1 className="serif text-6xl md:text-8xl">{year}</h1><p className="mt-4 max-w-xl text-lg leading-8">A first look back at the moments, people, and little details you chose not to lose.</p></div><nav className="flex gap-2">{years.map((value)=><Link className={`rounded-full px-4 py-2 font-bold ${value===year?"bg-white text-[var(--ink)]":"bg-white/25"}`} href={`/dashboard/wrapped?year=${value}`} key={value}>{value}</Link>)}</nav></div></section>
