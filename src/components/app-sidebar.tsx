@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { BookHeart, History, Home, Images, Sparkles } from "lucide-react";
+import { BookHeart, Home, Images, Sparkles } from "lucide-react";
 import { Logo } from "@/components/logo";
 
 const links = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/dashboard/memories", label: "Memories", icon: Images },
   { href: "/dashboard/collections", label: "Collections", icon: BookHeart },
-  { href: "/dashboard/nostalgia", label: "Nostalgia", icon: History },
   { href: "/dashboard/wrapped", label: "Wrapped", icon: Sparkles }
 ];
 

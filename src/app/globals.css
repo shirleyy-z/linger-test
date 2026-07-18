@@ -476,4 +476,3 @@ select {
 .event-card::after { content:""; position:absolute; width:120px; height:30px; right:-25px; top:12px; transform:rotate(32deg); background:rgba(254,205,190,.55); }
 .collection-timeline { padding-bottom:45px; }
 .wrapped-hero { color:white; background:radial-gradient(circle at 80% 10%,rgba(252,200,138,.75),transparent 24rem),linear-gradient(135deg,#536b58,#768e78 48%,#8b6d75); box-shadow:0 22px 50px rgba(68,61,48,.2); }
-.nostalgia-banner { background:linear-gradient(110deg,rgba(254,205,190,.45),rgba(255,250,240,.9),rgba(183,203,219,.45)); }
