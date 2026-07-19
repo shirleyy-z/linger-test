@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Heart, ImagePlus, LoaderCircle, PenLine, Save, Trash2, X } from "lucide-react";
 import { AuthorTag } from "@/components/memories/author-tag";
 import { createClient } from "@/lib/supabase/client";
+import { compressImageFile } from "@/lib/image-compression";
 import { MEMORY_TYPES, type Memory, type MemoryMedia, type MemoryType } from "@/lib/memories";
 import { VoiceRecorder } from "@/components/memories/voice-recorder";
 
@@ -220,9 +222,10 @@ export function MemoryForm({ memory, collections = [], initialCollectionId, show
     }
 
     for (const file of files) {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const uploadFile = await compressImageFile(file);
+      const safeName = uploadFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
       const storagePath = `${user.id}/${memoryId}/${crypto.randomUUID()}-${safeName}`;
-      const { error: uploadError } = await supabase.storage.from("memories").upload(storagePath, file, { contentType: file.type, upsert: false });
+      const { error: uploadError } = await supabase.storage.from("memories").upload(storagePath, uploadFile, { contentType: uploadFile.type, upsert: false });
 
       if (uploadError) {
         setError(`The memory was saved, but ${file.name} failed to upload: ${uploadError.message}`);
@@ -234,9 +237,9 @@ export function MemoryForm({ memory, collections = [], initialCollectionId, show
         memory_id: memoryId,
         owner_id: user.id,
         storage_path: storagePath,
-        file_name: file.name,
-        mime_type: file.type,
-        size_bytes: file.size
+        file_name: uploadFile.name,
+        mime_type: uploadFile.type,
+        size_bytes: uploadFile.size
       });
 
       if (mediaError) {
@@ -296,7 +299,11 @@ export function MemoryForm({ memory, collections = [], initialCollectionId, show
           <div className="attachment-manager-grid">
             {existingMedia.map((media) => (
               <article className="attachment-manager-item" key={media.id}>
-                {media.signed_url && media.mime_type.startsWith("image/") && <img alt={media.file_name} src={media.signed_url} />}
+                {media.signed_url && media.mime_type.startsWith("image/") && (
+                  <div className="attachment-thumb">
+                    <Image alt={media.file_name} className="object-cover" fill sizes="200px" src={media.signed_url} />
+                  </div>
+                )}
                 {media.signed_url && media.mime_type.startsWith("audio/") && <audio controls src={media.signed_url} />}
                 {media.signed_url && media.mime_type.startsWith("video/") && <video controls src={media.signed_url} />}
                 <p title={media.file_name}>{media.file_name}</p>
@@ -323,7 +330,13 @@ export function MemoryForm({ memory, collections = [], initialCollectionId, show
           <div className="pending-photo-grid mt-3">
             {pendingFiles.map((item) => (
               <div className="pending-photo-item" key={item.id}>
-                {item.previewUrl ? <img alt={item.file.name} src={item.previewUrl} /> : <p className="pending-photo-name" title={item.file.name}>{item.file.name}</p>}
+                {item.previewUrl ? (
+                  <div className="pending-photo-thumb">
+                    <Image alt={item.file.name} className="object-cover" fill sizes="150px" src={item.previewUrl} unoptimized />
+                  </div>
+                ) : (
+                  <p className="pending-photo-name" title={item.file.name}>{item.file.name}</p>
+                )}
                 <button aria-label={`Remove ${item.file.name}`} className="pending-photo-remove" disabled={busy} onClick={() => removePendingFile(item.id)} type="button"><X size={14} /></button>
               </div>
             ))}

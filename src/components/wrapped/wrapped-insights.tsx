@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { formatMemoryDate, type Memory } from "@/lib/memories";
 import { buildYearDigest, getLastCompletedYear, type WrappedReport } from "@/lib/wrapped";
@@ -72,7 +73,9 @@ function ThenNowPolaroid({ label, thumb, title, rotate }: { label: string; thumb
   return (
     <div className="polaroid then-now-photo" style={{ transform: `rotate(${rotate})` }}>
       {thumb ? (
-        <img alt={title} className="then-now-image" src={thumb} />
+        <div className="then-now-image-frame">
+          <Image alt={title} className="object-cover" fill sizes="220px" src={thumb} />
+        </div>
       ) : (
         <div className="then-now-fallback">
           <p className="serif">{title}</p>

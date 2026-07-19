@@ -433,7 +433,6 @@ select {
 .stacked-photo::after { content:""; position:absolute; inset:7px; background:#fffdf8; border:1px solid rgba(120,103,75,.15); z-index:-1; }
 .stacked-photo::before { transform: rotate(-3deg) translate(-7px,2px); }
 .stacked-photo::after { transform: rotate(2.5deg) translate(7px,1px); }
-.scrap-image { width:100%; max-height:390px; object-fit:cover; pointer-events:none; }
 .mini-cassette { margin: 16px; padding: 22px 18px; text-align:center; border-radius:12px; background:var(--bluebell); border:3px double rgba(63,70,61,.45); font-weight:800; letter-spacing:.2em; }
 .scrap-drag-label { position:absolute; left:8px; top:7px; z-index:9; display:flex; gap:4px; align-items:center; border-radius:999px; padding:4px 8px; background:rgba(255,250,240,.9); font-size:11px; font-weight:800; }
 .scrap-controls { position:absolute; right:8px; bottom:8px; z-index:9; display:flex; gap:5px; }
@@ -473,12 +472,19 @@ select {
   border-radius: 16px;
   background: rgba(255, 253, 248, .78);
 }
-.attachment-manager-item img,
 .attachment-manager-item video {
   width: 100%;
   height: 135px;
   border-radius: 10px;
   object-fit: cover;
+  background: #eee;
+}
+.attachment-thumb {
+  position: relative;
+  width: 100%;
+  height: 135px;
+  border-radius: 10px;
+  overflow: hidden;
   background: #eee;
 }
 .attachment-manager-item audio { width: 100%; margin-top: 18px; }
@@ -488,7 +494,7 @@ select {
 
 .pending-photo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
 .pending-photo-item { position: relative; min-width: 0; }
-.pending-photo-item img { width: 100%; height: 120px; border-radius: 12px; object-fit: cover; background: #eee; border: 1px solid var(--line); }
+.pending-photo-thumb { position: relative; width: 100%; height: 120px; border-radius: 12px; overflow: hidden; background: #eee; border: 1px solid var(--line); }
 .pending-photo-item .pending-photo-name { display: flex; align-items: center; height: 120px; padding: 8px; border-radius: 12px; border: 1px dashed var(--line); background: rgba(255, 253, 248, .78); overflow: hidden; font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .pending-photo-remove { position: absolute; top: -8px; right: -8px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid white; background: #a63f3f; color: white; cursor: pointer; box-shadow: 0 3px 8px rgba(68,61,48,.25); }
 .pending-photo-remove:disabled { opacity: .55; cursor: wait; }
@@ -496,7 +502,6 @@ select {
 .memory-photo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; align-items: start; padding: 12px; }
 .memory-photo-grid.single { grid-template-columns: 1fr; }
 .memory-gallery-photo { padding: 11px 11px 42px; }
-.memory-gallery-photo img { width: 100%; max-height: 430px; object-fit: cover; }
 .memory-gallery-photo figcaption { margin-top: 10px; text-align: center; font-size: 17px; }
 .gallery-photo-0 { transform: rotate(-1.8deg); }
 .gallery-photo-1 { transform: rotate(2.1deg) translateY(20px); }
@@ -535,5 +540,5 @@ select {
 .then-now-connector::before { content:""; position:absolute; left:0; right:0; top:50%; height:2px; transform:translateY(-50%); z-index:0; background:repeating-linear-gradient(90deg, var(--fern) 0 8px, transparent 8px 14px); }
 .then-now-connector svg { position:relative; z-index:1; background:var(--cream); border-radius:50%; padding:6px; box-shadow:0 4px 10px rgba(68,61,48,.14); }
 .then-now-photo { width:220px; max-width:100%; }
-.then-now-image { width:100%; height:220px; object-fit:cover; }
+.then-now-image-frame { position:relative; width:100%; height:220px; overflow:hidden; }
 .then-now-fallback { display:grid; place-items:center; width:100%; height:220px; padding:12px; background:var(--fennel); text-align:center; }

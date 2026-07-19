@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { CalendarClock, Images, Plus, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -56,7 +57,13 @@ export default async function DashboardPage() {
               </>
             )}
           </div>
-          {imageUrl && <div className="polaroid rotate-2">{/* eslint-disable-next-line @next/next/no-img-element */}<img alt={found?.title ?? "Memory"} className="h-44 w-full object-cover" src={imageUrl} /></div>}
+          {imageUrl && (
+            <div className="polaroid rotate-2">
+              <div className="relative h-44 w-full">
+                <Image alt={found?.title ?? "Memory"} className="object-cover" fill priority sizes="(min-width: 768px) 260px, 100vw" src={imageUrl} />
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

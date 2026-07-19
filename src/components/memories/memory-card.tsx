@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Bell, Heart, Pencil } from "lucide-react";
 import { AuthorTag } from "@/components/memories/author-tag";
@@ -16,8 +17,9 @@ export function MemoryCard({ memory, index, showAuthor = false }: { memory: Memo
       <span className="memory-sticker" aria-hidden="true">{sticker}</span>
       <article className={`paper-soft scrapbook-card relative overflow-hidden rounded-[26px] ${rotation} transition hover:rotate-0`}>
         {media?.signed_url && media.mime_type.startsWith("image/") && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img alt={memory.title} className="h-60 w-full object-cover" src={media.signed_url} />
+          <div className="relative h-60 w-full">
+            <Image alt={memory.title} className="object-cover" fill sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" src={media.signed_url} />
+          </div>
         )}
         {media?.signed_url && media.mime_type.startsWith("audio/") && (
           <div className="bg-[var(--bluebell)]/40 p-5"><audio className="w-full" controls src={media.signed_url} /></div>

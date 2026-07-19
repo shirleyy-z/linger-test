@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Bell, Grip, Heart, RotateCcw, RotateCw } from "lucide-react";
 import type { Memory } from "@/lib/memories";
@@ -31,9 +32,8 @@ export function ScrapbookMemory({ memory, layout, editing, onPointerDown, onResi
 
       <Link className="block" href={editing ? "#" : `/dashboard/memories/${memory.id}`} onClick={(event) => editing && event.preventDefault()}>
         {media?.signed_url && media.mime_type.startsWith("image/") && (
-          <div className={`stacked-photo ${memory.memory_media.length > 1 ? "has-many" : ""}`}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img alt={memory.title} className="scrap-image" draggable={false} src={media.signed_url} />
+          <div className={`stacked-photo aspect-[4/3] ${memory.memory_media.length > 1 ? "has-many" : ""}`}>
+            <Image alt={memory.title} className="pointer-events-none object-cover" draggable={false} fill sizes="(max-width: 900px) 100vw, 620px" src={media.signed_url} />
             {memory.memory_media.length > 1 && <span className="attachment-count">+{memory.memory_media.length - 1}</span>}
           </div>
         )}

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Bell, Heart, Pencil } from "lucide-react";
@@ -44,8 +45,9 @@ export default async function MemoryDetailsPage({ params }: { params: Promise<{ 
               <div className={`memory-photo-grid ${images.length === 1 ? "single" : ""}`}>
                 {images.map((media, index) => (
                   <figure className={`polaroid memory-gallery-photo gallery-photo-${index % 5}`} key={media.id}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img alt={`${memory.title} photo ${index + 1}`} src={media.signed_url!} />
+                    <div className="relative aspect-[4/3] w-full">
+                      <Image alt={`${memory.title} photo ${index + 1}`} className="object-cover" fill priority={index === 0} sizes="(min-width: 1024px) 600px, 100vw" src={media.signed_url!} />
+                    </div>
                     {index === 0 && <figcaption className="handwritten">{formatMemoryDate(memory.occurred_at)}</figcaption>}
                   </figure>
                 ))}

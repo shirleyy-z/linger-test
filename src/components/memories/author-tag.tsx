@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { initials, type MemoryAuthor } from "@/lib/memories";
 
 export function AuthorTag({ author, className = "" }: { author: MemoryAuthor; className?: string }) {
@@ -5,8 +6,7 @@ export function AuthorTag({ author, className = "" }: { author: MemoryAuthor; cl
     <span className={`author-tag ${className}`} title={`Added by ${author.display_name}`}>
       <span className="author-tag-avatar" aria-hidden="true">
         {author.avatar_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img alt="" src={author.avatar_url} />
+          <Image alt="" height={20} src={author.avatar_url} width={20} />
         ) : (
           initials(author.display_name)
         )}
