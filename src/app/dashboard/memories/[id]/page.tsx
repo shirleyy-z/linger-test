@@ -69,7 +69,7 @@ export default async function MemoryDetailsPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        <div className="mt-9 flex flex-wrap gap-3 border-t border-dashed border-[var(--line)] pt-6"><Link className="primary-button" href={`/dashboard/memories/${memory.id}/edit`}><Pencil size={17} /> Edit memory and attachments</Link><DeleteMemoryButton id={memory.id} paths={memory.memory_media.map((item) => item.storage_path)} /></div>
+        <div className="mt-9 flex flex-wrap gap-3 border-t border-dashed border-[var(--line)] pt-6"><Link className="primary-button" href={`/dashboard/memories/${memory.id}/edit`}><Pencil size={17} /> Edit memory and attachments</Link><DeleteMemoryButton id={memory.id} paths={memory.memory_media.map((item) => item.storage_path)} redirectTo="/dashboard/memories" /></div>
       </article>
     </main>
   );
