@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Heart, ImagePlus, LoaderCircle, PenLine, Save, Trash2 } from "lucide-react";
+import { CalendarDays, Heart, ImagePlus, LoaderCircle, PenLine, Save, Trash2, X } from "lucide-react";
 import { AuthorTag } from "@/components/memories/author-tag";
 import { createClient } from "@/lib/supabase/client";
 import { MEMORY_TYPES, type Memory, type MemoryMedia, type MemoryType } from "@/lib/memories";
@@ -10,9 +10,11 @@ import { VoiceRecorder } from "@/components/memories/voice-recorder";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 const MAX_ATTACHMENTS = 12;
+const MAX_PHOTOS = 8;
 const ACCEPTED_TYPES = ["image/", "audio/", "video/"];
 
 type CollectionOption = { id: string; name: string; cover_emoji: string; selected?: boolean };
+type PendingFile = { id: string; file: File; previewUrl: string | null };
 
 export function MemoryForm({ memory, collections = [], initialCollectionId, showAuthor = false }: { memory?: Memory; collections?: CollectionOption[]; initialCollectionId?: string; showAuthor?: boolean }) {
   const router = useRouter();
@@ -24,7 +26,19 @@ export function MemoryForm({ memory, collections = [], initialCollectionId, show
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
   const [existingMedia, setExistingMedia] = useState<MemoryMedia[]>(memory?.memory_media ?? []);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const pendingFilesRef = useRef(pendingFiles);
   const [selectedCollections, setSelectedCollections] = useState<string[]>(collections.filter((item) => item.selected || item.id === initialCollectionId).map((item) => item.id));
+
+  useEffect(() => {
+    pendingFilesRef.current = pendingFiles;
+  }, [pendingFiles]);
+
+  useEffect(() => {
+    return () => {
+      pendingFilesRef.current.forEach((item) => item.previewUrl && URL.revokeObjectURL(item.previewUrl));
+    };
+  }, []);
 
   const today = new Date().toISOString().slice(0, 10);
   const nowForInput = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
@@ -55,17 +69,76 @@ export function MemoryForm({ memory, collections = [], initialCollectionId, show
     router.refresh();
   }
 
+  function handleFileSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    const chosen = Array.from(event.target.files ?? []);
+    // Reset so the same picker can be reopened to keep appending files —
+    // browsers replace a file input's FileList on every selection, they never merge it.
+    event.target.value = "";
+    if (chosen.length === 0) return;
+
+    for (const file of chosen) {
+      if (file.size > MAX_FILE_SIZE) {
+        setError(`${file.name} is larger than 25 MB.`);
+        return;
+      }
+      if (!ACCEPTED_TYPES.some((prefix) => file.type.startsWith(prefix))) {
+        setError(`${file.name} is not a supported image, audio, or video file.`);
+        return;
+      }
+    }
+
+    const existingPhotoCount = existingMedia.filter((item) => item.mime_type.startsWith("image/")).length
+      + pendingFiles.filter((item) => item.file.type.startsWith("image/")).length;
+    const newPhotoCount = chosen.filter((file) => file.type.startsWith("image/")).length;
+    if (existingPhotoCount + newPhotoCount > MAX_PHOTOS) {
+      setError(`A memory can contain up to ${MAX_PHOTOS} photos.`);
+      return;
+    }
+
+    const totalAttachments = existingMedia.length + pendingFiles.length + (recordedFile ? 1 : 0) + chosen.length;
+    if (totalAttachments > MAX_ATTACHMENTS) {
+      setError(`A memory can contain up to ${MAX_ATTACHMENTS} attachments.`);
+      return;
+    }
+
+    setError("");
+    setPendingFiles((current) => [
+      ...current,
+      ...chosen.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null
+      }))
+    ]);
+  }
+
+  function removePendingFile(id: string) {
+    setPendingFiles((current) => {
+      const target = current.find((item) => item.id === id);
+      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
+      return current.filter((item) => item.id !== id);
+    });
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setError("");
 
     const form = new FormData(event.currentTarget);
-    const selectedFiles = (form.getAll("media") as File[]).filter((file) => file.size > 0);
+    const selectedFiles = pendingFiles.map((item) => item.file);
     const files = recordedFile ? [...selectedFiles, recordedFile] : selectedFiles;
 
     if (existingMedia.length + files.length > MAX_ATTACHMENTS) {
       setError(`A memory can contain up to ${MAX_ATTACHMENTS} attachments.`);
+      setBusy(false);
+      return;
+    }
+
+    const photoCount = existingMedia.filter((item) => item.mime_type.startsWith("image/")).length
+      + files.filter((file) => file.type.startsWith("image/")).length;
+    if (photoCount > MAX_PHOTOS) {
+      setError(`A memory can contain up to ${MAX_PHOTOS} photos.`);
       setBusy(false);
       return;
     }
@@ -238,11 +311,25 @@ export function MemoryForm({ memory, collections = [], initialCollectionId, show
       <div className="mt-6 grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
         <label>
           <span className="label"><ImagePlus className="mr-1 inline" size={16} /> {memoryType === "voice" ? "Add audio, photos, or videos" : "Add photos, audio, or videos"}</span>
-          <input accept="image/*,audio/*,video/*" className="input file:mr-4 file:rounded-full file:border-0 file:bg-[var(--fennel)] file:px-4 file:py-2 file:font-bold" multiple name="media" type="file" />
-          <span className="mt-2 block text-xs text-[var(--muted)]">Choose several files at once. Up to {MAX_ATTACHMENTS} attachments per memory, 25 MB per file.</span>
+          <input accept="image/*,audio/*,video/*" className="input file:mr-4 file:rounded-full file:border-0 file:bg-[var(--fennel)] file:px-4 file:py-2 file:font-bold" multiple onChange={handleFileSelect} type="file" />
+          <span className="mt-2 block text-xs text-[var(--muted)]">Choose several files, or reopen this picker to add more. Up to {MAX_PHOTOS} photos and {MAX_ATTACHMENTS} attachments per memory, 25 MB per file.</span>
         </label>
         <button className={`secondary-button ${favorite ? "bg-[var(--cherry)]" : ""}`} onClick={() => setFavorite((value) => !value)} type="button"><Heart fill={favorite ? "currentColor" : "none"} size={18} /> {favorite ? "Favourite" : "Mark favourite"}</button>
       </div>
+
+      {pendingFiles.length > 0 && (
+        <section className="mt-7">
+          <p className="label">Ready to upload ({pendingFiles.length})</p>
+          <div className="pending-photo-grid mt-3">
+            {pendingFiles.map((item) => (
+              <div className="pending-photo-item" key={item.id}>
+                {item.previewUrl ? <img alt={item.file.name} src={item.previewUrl} /> : <p className="pending-photo-name" title={item.file.name}>{item.file.name}</p>}
+                <button aria-label={`Remove ${item.file.name}`} className="pending-photo-remove" disabled={busy} onClick={() => removePendingFile(item.id)} type="button"><X size={14} /></button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {error && <p className="mt-5 rounded-2xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}
       <div className="mt-8 flex flex-wrap gap-3"><button className="primary-button" disabled={busy} type="submit">{busy ? <LoaderCircle className="animate-spin" size={18} /> : <Save size={18} />} {busy ? "Saving..." : memory ? "Save changes" : "Keep this memory"}</button><button className="secondary-button" disabled={busy} onClick={() => router.back()} type="button">Cancel</button></div>

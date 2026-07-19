@@ -46,7 +46,7 @@ export default async function MemoryDetailsPage({ params }: { params: Promise<{ 
                   <figure className={`polaroid memory-gallery-photo gallery-photo-${index % 5}`} key={media.id}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img alt={`${memory.title} photo ${index + 1}`} src={media.signed_url!} />
-                    <figcaption className="handwritten">{index === 0 ? formatMemoryDate(memory.occurred_at) : `photo ${index + 1}`}</figcaption>
+                    {index === 0 && <figcaption className="handwritten">{formatMemoryDate(memory.occurred_at)}</figcaption>}
                   </figure>
                 ))}
               </div>

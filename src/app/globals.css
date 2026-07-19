@@ -486,6 +486,13 @@ select {
 .attachment-delete { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; border: 0; background: transparent; color: #a63f3f; font-size: 12px; font-weight: 800; cursor: pointer; }
 .attachment-delete:disabled { opacity: .55; cursor: wait; }
 
+.pending-photo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.pending-photo-item { position: relative; min-width: 0; }
+.pending-photo-item img { width: 100%; height: 120px; border-radius: 12px; object-fit: cover; background: #eee; border: 1px solid var(--line); }
+.pending-photo-item .pending-photo-name { display: flex; align-items: center; height: 120px; padding: 8px; border-radius: 12px; border: 1px dashed var(--line); background: rgba(255, 253, 248, .78); overflow: hidden; font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.pending-photo-remove { position: absolute; top: -8px; right: -8px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid white; background: #a63f3f; color: white; cursor: pointer; box-shadow: 0 3px 8px rgba(68,61,48,.25); }
+.pending-photo-remove:disabled { opacity: .55; cursor: wait; }
+
 .memory-photo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; align-items: start; padding: 12px; }
 .memory-photo-grid.single { grid-template-columns: 1fr; }
 .memory-gallery-photo { padding: 11px 11px 42px; }
