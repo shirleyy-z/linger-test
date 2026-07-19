@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bell, Clock3, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -16,15 +16,17 @@ type DueReminder = {
 export function ReminderPopup() {
   const supabase = useMemo(() => createClient(), []);
   const [reminders, setReminders] = useState<DueReminder[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Guards against overlapping fetches; a ref (not state) keeps checkReminders'
+  // identity stable so the effect below sets up its interval/listener exactly once.
+  const loadingRef = useRef(false);
   const current = reminders[0];
 
   const checkReminders = useCallback(async () => {
-    if (loading) return;
-    setLoading(true);
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      setLoading(false);
+      loadingRef.current = false;
       return;
     }
 
@@ -37,8 +39,8 @@ export function ReminderPopup() {
       .limit(5);
 
     setReminders((data ?? []).filter((item): item is DueReminder => Boolean(item.reminder_at)));
-    setLoading(false);
-  }, [loading, supabase]);
+    loadingRef.current = false;
+  }, [supabase]);
 
   useEffect(() => {
     void checkReminders();
