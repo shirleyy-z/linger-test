@@ -1,4 +1,4 @@
-# Linger
+# linger
 
 An AI powered memory capsule. Preserve a moment, and years later see not just what happened, but who you were when it happened.
 
