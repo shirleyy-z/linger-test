@@ -11,11 +11,15 @@ type SearchParams = { q?: string; type?: string; month?: string; from?: string; 
 export default async function MemoriesPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const ownerId = user?.id ?? "";
 
-  const { data: dateRows } = await supabase.from("memories").select("occurred_at").order("occurred_at", { ascending: false });
+  // RLS also lets collection-shared rows through (required for the Collections page) — this is
+  // the personal Memories view, so it must filter to the owner explicitly rather than trust RLS alone.
+  const { data: dateRows } = await supabase.from("memories").select("occurred_at").eq("owner_id", ownerId).order("occurred_at", { ascending: false });
   const availableMonths = [...new Set((dateRows ?? []).map((row) => monthKey(row.occurred_at)))];
 
-  let query = supabase.from("memories").select("*, memory_media(*)").order("occurred_at", { ascending: false }).order("created_at", { ascending: false });
+  let query = supabase.from("memories").select("*, memory_media(*)").eq("owner_id", ownerId).order("occurred_at", { ascending: false }).order("created_at", { ascending: false });
   if (params.type && params.type !== "all") query = query.eq("memory_type", params.type);
   if (params.q?.trim()) query = query.or(`title.ilike.%${params.q.trim()}%,body.ilike.%${params.q.trim()}%`);
 

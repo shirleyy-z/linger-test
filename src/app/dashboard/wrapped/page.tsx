@@ -1,19 +1,25 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { CalendarDays, Heart, Images, Sparkles, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatMonth, monthKey, type Memory } from "@/lib/memories";
+import { getLastCompletedYear } from "@/lib/wrapped";
+import { WrappedInsights, WrappedInsightsSkeleton } from "@/components/wrapped/wrapped-insights";
 
 export const dynamic = "force-dynamic";
 
 export default async function WrappedPage({ searchParams }: { searchParams: Promise<{ year?: string }> }) {
   const { year: requested } = await searchParams;
-  const currentYear = new Date().getFullYear(); // server time — never trust the client's clock
-  const lastCompletedYear = currentYear - 1;
+  const lastCompletedYear = getLastCompletedYear(); // server time — never trust the client's clock
   const requestedYear = Number(requested);
   const year = requestedYear && requestedYear <= lastCompletedYear ? requestedYear : lastCompletedYear;
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const ownerId = user?.id ?? "";
+  // RLS also lets collection-shared rows through (required for the Collections page) — Wrapped is
+  // a personal-year recap, so it must filter to the owner explicitly rather than trust RLS alone.
   const [{ data }, { count: collectionCount }] = await Promise.all([
-    supabase.from("memories").select("*, memory_media(*)").gte("occurred_at", `${year}-01-01`).lte("occurred_at", `${year}-12-31`).order("occurred_at"),
+    supabase.from("memories").select("*, memory_media(*)").eq("owner_id", ownerId).gte("occurred_at", `${year}-01-01`).lte("occurred_at", `${year}-12-31`).order("occurred_at"),
     supabase.from("collections").select("id", { count: "exact", head: true })
   ]);
   const memories = (data ?? []) as Memory[];
@@ -33,6 +39,9 @@ export default async function WrappedPage({ searchParams }: { searchParams: Prom
       <section className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-4"><Stat icon={Images} number={memories.length} label="memories kept"/><Stat icon={Heart} number={favoriteCount} label="favourites"/><Stat icon={CalendarDays} number={photoCount} label="photo moments"/><Stat icon={Users} number={collectionCount ?? 0} label="shared collections"/></section>
       <section className="mt-7 grid gap-6 lg:grid-cols-2"><article className="paper rounded-[30px] p-7"><p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--fern-dark)]">Your fullest chapter</p><h2 className="serif mt-3 text-4xl">{topMonth ? formatMonth(topMonth[0]) : "This year"}</h2><p className="mt-4 text-[var(--muted)]">You saved {topMonth?.[1] ?? 0} moments here—more than any other month.</p></article><article className="paper rounded-[30px] p-7"><p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--fern-dark)]">How you remembered</p><h2 className="serif mt-3 text-4xl">Mostly through {topType?.[0] ?? "memories"}</h2><p className="mt-4 text-[var(--muted)]">Your most-used format appeared {topType?.[1] ?? 0} times.</p></article></section>
       <section className="paper mt-7 rounded-[30px] p-7 md:p-10"><div className="flex items-center gap-2"><Sparkles size={20}/><p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--fern-dark)]">The shape of your year</p></div><div className="mt-8 grid gap-8 md:grid-cols-[1fr_auto_1fr]"><div><p className="text-sm font-bold text-[var(--muted)]">It began with</p><h3 className="serif mt-2 text-3xl">{first?.title}</h3><p className="mt-3 line-clamp-4 leading-7 text-[var(--muted)]">{first?.body || "A moment you kept."}</p></div><div className="hidden w-px bg-[var(--line)] md:block"/><div><p className="text-sm font-bold text-[var(--muted)]">And lingered on</p><h3 className="serif mt-2 text-3xl">{last?.title}</h3><p className="mt-3 line-clamp-4 leading-7 text-[var(--muted)]">{last?.body || "A moment you kept."}</p></div></div></section>
+      <Suspense fallback={<WrappedInsightsSkeleton />}>
+        <WrappedInsights year={year} memories={memories} />
+      </Suspense>
     </>}
   </main>;
 }

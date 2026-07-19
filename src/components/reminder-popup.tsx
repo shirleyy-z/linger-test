@@ -30,9 +30,12 @@ export function ReminderPopup() {
       return;
     }
 
+    // RLS also lets collection-shared rows through (required for the Collections page) — reminders
+    // are personal, so this must filter to the owner explicitly rather than trust RLS alone.
     const { data } = await supabase
       .from("memories")
       .select("id,title,body,occurred_at,reminder_at")
+      .eq("owner_id", user.id)
       .lte("reminder_at", new Date().toISOString())
       .is("reminder_notified_at", null)
       .order("reminder_at", { ascending: true })

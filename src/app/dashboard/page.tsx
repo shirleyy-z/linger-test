@@ -10,10 +10,13 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   const displayName = user?.user_metadata?.display_name ?? user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "there";
 
+  const ownerId = user?.id ?? "";
+  // RLS also lets collection-shared rows through (required for the Collections page) — these are
+  // personal-dashboard queries, so they must filter to the owner explicitly rather than trust RLS alone.
   const [{ count }, { data: reminders }, { data: resurfaced }] = await Promise.all([
-    supabase.from("memories").select("id", { count: "exact", head: true }),
-    supabase.from("memories").select("id, reminder_at").not("reminder_at", "is", null).gte("reminder_at", new Date().toISOString()).order("reminder_at").limit(1),
-    supabase.from("memories").select("*, memory_media(*)").lt("occurred_at", new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)).order("occurred_at", { ascending: true }).limit(1)
+    supabase.from("memories").select("id", { count: "exact", head: true }).eq("owner_id", ownerId),
+    supabase.from("memories").select("id, reminder_at").eq("owner_id", ownerId).not("reminder_at", "is", null).gte("reminder_at", new Date().toISOString()).order("reminder_at").limit(1),
+    supabase.from("memories").select("*, memory_media(*)").eq("owner_id", ownerId).lt("occurred_at", new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)).order("occurred_at", { ascending: true }).limit(1)
   ]);
 
   const found = resurfaced?.[0] as Memory | undefined;
