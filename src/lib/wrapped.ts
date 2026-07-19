@@ -1,14 +1,22 @@
 import type { Memory } from "@/lib/memories";
 
-export type WrappedReport = {
+export type WrappedSnapshots = {
   id: string;
   owner_id: string;
   year: number;
-  narrative: string | null;
-  callback_before_memory_id: string | null;
-  callback_after_memory_id: string | null;
-  callback_text: string | null;
-  status: "pending" | "done" | "failed";
+  drink: string | null;
+  drink_reason: string | null;
+  season: "spring" | "summer" | "autumn" | "winter" | null;
+  season_reason: string | null;
+  busiest_month: string | null;
+  busiest_month_count: number | null;
+  busiest_month_caption: string | null;
+  recurring_themes: { label: string; count: number }[] | null;
+  cast_of_characters: { name: string; count: number }[] | null;
+  memory_word: string | null;
+  dominant_color: string | null;
+  gemini_status: "pending" | "done" | "failed";
+  color_status: "pending" | "done" | "failed";
   generated_at: string | null;
   created_at: string;
 };
@@ -24,6 +32,21 @@ export type WrappedDigestEntry = {
 // A year only becomes eligible for Wrapped once it has fully elapsed.
 export function getLastCompletedYear(now: Date = new Date()) {
   return now.getFullYear() - 1;
+}
+
+// Which calendar month had the most entries — a real, exact count, never left to Gemini
+// (LLMs aren't reliable counters, and the digest itself may be sampled for big years anyway).
+export function computeBusiestMonth(memories: Memory[]): { month: string; count: number; memories: Memory[] } | null {
+  if (memories.length === 0) return null;
+  const byMonth = new Map<string, Memory[]>();
+  for (const memory of memories) {
+    const key = memory.occurred_at.slice(0, 7);
+    const bucket = byMonth.get(key);
+    if (bucket) bucket.push(memory);
+    else byMonth.set(key, [memory]);
+  }
+  const [month, monthMemories] = [...byMonth.entries()].sort((a, b) => b[1].length - a[1].length)[0];
+  return { month, count: monthMemories.length, memories: monthMemories };
 }
 
 const MAX_DIGEST_ENTRIES = 60;

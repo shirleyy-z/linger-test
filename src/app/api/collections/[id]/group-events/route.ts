@@ -12,7 +12,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
   if (items.length < 2) return NextResponse.json({ error: "Add at least two memories before grouping them." }, { status: 400 });
   const key = process.env.GEMINI_API_KEY;
   if (!key) return NextResponse.json({ error: "Add GEMINI_API_KEY to .env.local to use AI grouping." }, { status: 503 });
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
   const prompt = `You organize memories into meaningful real-world events. Group only memories that clearly belong together. Return JSON only as {"events":[{"title":"poetic concise title","summary":"warm 1-2 sentence summary","theme":"short theme","suggested_stickers":["emoji","emoji"],"memory_ids":["uuid"],"start_date":"YYYY-MM-DD","end_date":"YYYY-MM-DD"}]}. Every event needs at least 2 memories. Do not invent facts. Memories:\n${JSON.stringify(items)}`;
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", temperature: 0.5 } }) });
   if (!response.ok) return NextResponse.json({ error: `Gemini request failed (${response.status}).` }, { status: 502 });
